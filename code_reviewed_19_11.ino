@@ -86,12 +86,92 @@ void setup() {
   EEPROM.begin(512);
   // loadSettings();
 
-  // setRTCtimeOnBoot();
-  showMenu();
+  setRTCtimeOnBoot();
+
 }
 
 void loop(){
 
+}
+void setRTCtimeOnBoot() {
+  int year = 2025, month = 1, day = 1, hour = 0, minute = 0;
+  int cursor = 0; // 0=year, 1=month, 2=day, 3=hour, 4=minute
+  bool done = false;
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println("Set Date & Time");
+  display.display();
+  delay(1000);
+
+  while (!done) {
+    display.clearDisplay();
+    display.setTextColor(WHITE);
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.println("Set Date & Time");
+
+    display.setCursor(0, 20);
+    display.printf("Y:%04d M:%02d D:%02d", year, month, day);
+    display.setCursor(0, 40);
+    display.printf("T:%02d:%02d", hour, minute);
+
+    switch (cursor) {
+      case 0: display.setCursor(30, 30); break;  // Year
+      case 1: display.setCursor(60, 30); break;  // Month
+      case 2: display.setCursor(90, 30); break; // Day
+      case 3: display.setCursor(19, 50); break;  // Hour
+      case 4: display.setCursor(36, 50); break;  // Minute
+    }
+    display.print("^");
+    display.display();
+
+    if (digitalRead(buttonDown) == LOW) {
+      switch (cursor) {
+        case 0: year++; break;
+        case 1: month = (month < 12) ? month + 1 : 1; break;
+        case 2: day = (day < 31) ? day + 1 : 1; break;
+        case 3: hour = (hour + 1) % 24; break;
+        case 4: minute = (minute + 1) % 60; break;
+      }
+      delay(200);
+    }
+
+    if (digitalRead(buttonUp) == LOW) {
+      switch (cursor) {
+        case 0: year--; if (year < 2020) year = 2025; break;
+        case 1: month = (month > 1) ? month - 1 : 12; break;
+        case 2: day = (day > 1) ? day - 1 : 31; break;
+        case 3: hour = (hour == 0) ? 23 : hour - 1; break;
+        case 4: minute = (minute == 0) ? 59 : minute - 1; break;
+      }
+      delay(200);
+    }
+
+    if (digitalRead(buttonEnter) == LOW) {
+      cursor++;
+      if (cursor > 4) {
+        rtc.adjust(DateTime(year, month, day, hour, minute, 0));
+        display.clearDisplay();
+        display.setCursor(10, 25);
+        display.println("Time Saved!");
+        display.display();
+        delay(1000);
+        done = true;
+      }
+      delay(300);
+    }
+
+    if (digitalRead(buttonBack) == LOW) {
+      rtc.adjust(DateTime(year, month, day, hour, minute, 0));
+      done = true;
+      delay(300);
+    }
+  }
+
+  showMenu();
 }
 
 void showMenu() {
