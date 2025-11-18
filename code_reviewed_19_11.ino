@@ -29,7 +29,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Stepper stepperMotor(STEPS, 14, 26, 27, 25);  //ini1 => 16, ini3 => 14 , ini2 => 10, ini4 => 15
 
 // ===== RTC =====
-// RTC_DS3231 rtc;
+RTC_DS3231 rtc;
 
 // ===== BUTTONS =====
 const int buttonUp = 19;
@@ -72,10 +72,10 @@ void setup() {
   }
 
   // Μετά τα υπόλοιπα
-  // if (!rtc.begin()) {
-  //   Serial.println("RTC not found!");
-  //   while (1);
-  // }
+  if (!rtc.begin()) {
+    Serial.println("RTC not found!");
+    while (1);
+  }
 
   pinMode(buttonUp, INPUT_PULLUP);
   pinMode(buttonDown, INPUT_PULLUP);
@@ -101,9 +101,9 @@ void showMenu() {
   display.setTextSize(1);
   display.setCursor(0, 0);
 
-  // display.printf("%02d/%02d/%04d", now.day(), now.month(), now.year());
-  // display.setCursor(90, 0);
-  // display.printf("%02d:%02d", now.hour(), now.minute());
+  display.printf("%02d/%02d/%04d", now.day(), now.month(), now.year());
+  display.setCursor(90, 0);
+  display.printf("%02d:%02d", now.hour(), now.minute());
 
   display.setCursor(0, 15);
   display.println(menuIndex==0?"> manual feeding":"  manual feeding");
