@@ -66,7 +66,7 @@ void setRTCtimeOnBoot();
 void setup() {
   Serial.begin(9600);
 
-  // Initialize OLED *πριν από οτιδήποτε άλλο*
+  // Initialize OLED
   Wire.begin(21, 22);
   Wire.setClock(100000);
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
@@ -75,24 +75,29 @@ void setup() {
       ;
   }
 
-  // Μετά τα υπόλοιπα
+  // Initialize RTC
   if (!rtc.begin()) {
     Serial.println("RTC not found!");
     while (1)
       ;
   }
 
+  // Pin installation
   pinMode(buttonUp, INPUT_PULLUP);
   pinMode(buttonDown, INPUT_PULLUP);
   pinMode(buttonEnter, INPUT_PULLUP);
   pinMode(buttonBack, INPUT_PULLUP);
 
+  // Set motor speed
   stepperMotor.setSpeed(5);
 
+  // Create space for EEprom usage
   EEPROM.begin(512);
 
+  // Load previous settings
   loadSettings();
 
+  // Set the time manualy
   setRTCtimeOnBoot();
 }
 
@@ -101,6 +106,8 @@ void loop() {
   if (isLocked) return;
   handleButtons();
 }
+
+
 void setRTCtimeOnBoot() {
   int year = 2025, month = 1, day = 1, hour = 0, minute = 0;
   int cursor = 0;  // 0=year, 1=month, 2=day, 3=hour, 4=minute
