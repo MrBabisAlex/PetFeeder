@@ -97,6 +97,8 @@ void setup() {
 }
 
 void loop() {
+  checkLockToggle();
+  if (isLocked) return;
   handleButtons();
 }
 void setRTCtimeOnBoot() {
@@ -255,7 +257,7 @@ void autoFeeding() {
   bool feedingDoneToday[5] = { false, false, false, false, false };
 
   unsigned long lastLoop = 0;
-  const unsigned long loopInterval = 500; // τρέχει κάθε 0.5s
+  const unsigned long loopInterval = 500;  // τρέχει κάθε 0.5s
 
   while (!exitMode) {
     if (millis() - lastLoop >= loopInterval) {
@@ -281,7 +283,7 @@ void autoFeeding() {
           stepperMotor.step(portions * stepAmount);
           feedingDoneToday[i] = true;
 
-          delay(1000); // μικρό delay για να δει την οθόνη
+          delay(1000);  // μικρό delay για να δει την οθόνη
           display.clearDisplay();
           display.setCursor(0, 15);
           display.println("Auto Feeding Mode");
@@ -304,7 +306,7 @@ void autoFeeding() {
 
     if (backState == LOW && backPrevState == HIGH) {
       unsigned long pressStart = millis();
-      while(digitalRead(buttonBack) == LOW) {
+      while (digitalRead(buttonBack) == LOW) {
         if (millis() - pressStart > 1000) {
           exitMode = true;
           break;
@@ -321,7 +323,9 @@ void autoFeeding() {
 // ===== SETTINGS =====
 void handleSettings() {
   bool done = false;
-  settingsState = SET_PORTIONS; settingsCursor = 0; settingsSubCursor = 0;
+  settingsState = SET_PORTIONS;
+  settingsCursor = 0;
+  settingsSubCursor = 0;
 
   while (!done) {
     display.clearDisplay();
@@ -379,9 +383,8 @@ void handleSettings() {
       if (settingsState == SET_PORTIONS && portions < 10) portions++;
       else if (settingsState == SET_FREQUENCY && frequency < 4) {
         frequency++;
-        timeCount = frequency; // ενημέρωση timeCount
-      }
-      else if (settingsState == SET_TIMES) {
+        timeCount = frequency;  // ενημέρωση timeCount
+      } else if (settingsState == SET_TIMES) {
         if (settingsSubCursor == 0)
           feedingTimes[settingsCursor][0] = (feedingTimes[settingsCursor][0] + 1) % 24;
         else
@@ -394,9 +397,8 @@ void handleSettings() {
       if (settingsState == SET_PORTIONS && portions > 1) portions--;
       else if (settingsState == SET_FREQUENCY && frequency > 1) {
         frequency--;
-        timeCount = frequency; // ενημέρωση timeCount
-      }
-      else if (settingsState == SET_TIMES) {
+        timeCount = frequency;  // ενημέρωση timeCount
+      } else if (settingsState == SET_TIMES) {
         if (settingsSubCursor == 0)
           feedingTimes[settingsCursor][0] = (feedingTimes[settingsCursor][0] + 23) % 24;
         else
@@ -454,12 +456,55 @@ void loadSettings() {
   frequency = EEPROM.read(1);
   if (frequency < 1 || frequency > 4) frequency = 2;
 
-  timeCount = frequency; // ενημέρωση timeCount κατά φόρτωση
+  timeCount = frequency;  // ενημέρωση timeCount κατά φόρτωση
 
   for (int i = 0; i < timeCount; i++) {
     feedingTimes[i][0] = EEPROM.read(2 + i * 2);
     feedingTimes[i][1] = EEPROM.read(2 + i * 2 + 1);
     if (feedingTimes[i][0] > 23) feedingTimes[i][0] = 0;
     if (feedingTimes[i][1] > 59) feedingTimes[i][1] = 0;
+  }
+}
+
+// ===== LOCK SYSTEM =====
+void checkLockToggle() {
+  static bool prevButtonState = HIGH;
+  bool buttonState = digitalRead(buttonBack);
+
+  if (millis() - lastBackPress > pressTimeout) backPressCount = 0;
+
+  if (buttonState == LOW && prevButtonState == HIGH) {
+    backPressCount++;
+    lastBackPress = millis();
+    delay(150);
+  }
+  prevButtonState = buttonState;
+
+  if (!isLocked && backPressCount >= 3) {
+    isLocked = true;
+    backPressCount = 0;
+    display.clearDisplay();
+    display.drawBitmap(30, 15, lock_screen, 64, 35, WHITE);
+    display.display();
+  }
+
+  while (isLocked) {
+    buttonState = digitalRead(buttonBack);
+    if (buttonState == LOW && prevButtonState == HIGH) {
+      backPressCount++;
+      lastBackPress = millis();
+      delay(150);
+    }
+    prevButtonState = buttonState;
+    if (millis() - lastBackPress > pressTimeout) backPressCount = 0;
+    if (backPressCount >= 3) {
+      isLocked = false;
+      backPressCount = 0;
+      display.clearDisplay();
+      display.drawBitmap(30, 15, unlock_screen, 64, 35, WHITE);
+      display.display();
+      delay(800);
+      showMenu();
+    }
   }
 }
