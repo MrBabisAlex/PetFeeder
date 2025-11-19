@@ -8,12 +8,15 @@
 #include <EEPROM.h>
 
 // ===== SETTINGS =====
-int portions = 1;        // 1–10
-int frequency = 2;       // 1–5 φορές/μέρα
-int feedingTimes[4][2];  // max 5 φορές [hour, minute]
-int timeCount = frequency;       // αριθμός ωρών βάσει frequency
+int portions = 1;           // 1–10
+int frequency = 2;          // 1–5 φορές/μέρα
+int feedingTimes[4][2];     // max 5 φορές [hour, minute]
+int timeCount = frequency;  // αριθμός ωρών βάσει frequency
 
-enum SettingsState { SET_PORTIONS, SET_FREQUENCY, SET_TIMES, SETTINGS_DONE };
+enum SettingsState { SET_PORTIONS,
+                     SET_FREQUENCY,
+                     SET_TIMES,
+                     SETTINGS_DONE };
 SettingsState settingsState = SET_PORTIONS;
 int settingsCursor = 0;
 int settingsSubCursor = 0;
@@ -68,13 +71,15 @@ void setup() {
   Wire.setClock(100000);
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
+    for (;;)
+      ;
   }
 
   // Μετά τα υπόλοιπα
   if (!rtc.begin()) {
     Serial.println("RTC not found!");
-    while (1);
+    while (1)
+      ;
   }
 
   pinMode(buttonUp, INPUT_PULLUP);
@@ -87,15 +92,14 @@ void setup() {
   // loadSettings();
 
   setRTCtimeOnBoot();
-
 }
 
-void loop(){
-
+void loop() {
+  handleButtons();
 }
 void setRTCtimeOnBoot() {
   int year = 2025, month = 1, day = 1, hour = 0, minute = 0;
-  int cursor = 0; // 0=year, 1=month, 2=day, 3=hour, 4=minute
+  int cursor = 0;  // 0=year, 1=month, 2=day, 3=hour, 4=minute
   bool done = false;
 
   display.clearDisplay();
@@ -121,7 +125,7 @@ void setRTCtimeOnBoot() {
     switch (cursor) {
       case 0: display.setCursor(30, 30); break;  // Year
       case 1: display.setCursor(60, 30); break;  // Month
-      case 2: display.setCursor(90, 30); break; // Day
+      case 2: display.setCursor(90, 30); break;  // Day
       case 3: display.setCursor(19, 50); break;  // Hour
       case 4: display.setCursor(36, 50); break;  // Minute
     }
@@ -141,7 +145,10 @@ void setRTCtimeOnBoot() {
 
     if (digitalRead(buttonUp) == LOW) {
       switch (cursor) {
-        case 0: year--; if (year < 2020) year = 2025; break;
+        case 0:
+          year--;
+          if (year < 2020) year = 2025;
+          break;
         case 1: month = (month > 1) ? month - 1 : 12; break;
         case 2: day = (day > 1) ? day - 1 : 31; break;
         case 3: hour = (hour == 0) ? 23 : hour - 1; break;
@@ -186,10 +193,47 @@ void showMenu() {
   display.printf("%02d:%02d", now.hour(), now.minute());
 
   display.setCursor(0, 15);
-  display.println(menuIndex==0?"> manual feeding":"  manual feeding");
+  display.println(menuIndex == 0 ? "> manual feeding" : "  manual feeding");
   display.setCursor(0, 30);
-  display.println(menuIndex==1?"> auto feeding":"  auto feeding");
+  display.println(menuIndex == 1 ? "> auto feeding" : "  auto feeding");
   display.setCursor(0, 45);
-  display.println(menuIndex==2?"> settings":"  settings");
+  display.println(menuIndex == 2 ? "> settings" : "  settings");
   display.display();
+}
+
+// ===== BUTTON HANDLER =====
+void handleButtons() {
+  now = rtc.now();
+
+  if (digitalRead(buttonUp) == LOW) {
+    menuIndex++;
+    if (menuIndex > 2) menuIndex = 0;
+    showMenu();
+    delay(200);
+  }
+  if (digitalRead(buttonDown) == LOW) {
+    menuIndex--;
+    if (menuIndex < 0) menuIndex = 2;
+    showMenu();
+    delay(200);
+  }
+
+  if (digitalRead(buttonEnter) == LOW) {
+    if (menuIndex == 0) manualFeeding();
+    if (menuIndex == 1) autoFeeding();
+    if (menuIndex == 2) handleSettings();
+    delay(200);
+  }
+}
+
+void manualFeeding(){
+
+}
+
+void autoFeeding(){
+
+}
+
+// void handleSettings(){
+
 }
