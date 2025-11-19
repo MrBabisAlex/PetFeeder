@@ -226,14 +226,213 @@ void handleButtons() {
   }
 }
 
-void manualFeeding(){
+// ===== MANUAL FEEDING =====
+void manualFeeding() {
+  stepperMotor.step(stepAmount);
+  animation();
+  display.clearDisplay();
+  display.drawBitmap(0, 0, loading_screen_bitmapallArray[5], 128, 64, SSD1306_WHITE);
+  display.display();
+  delay(2000);
+  showMenu();
+}
+
+// ===== AUTO FEEDING =====
+void autoFeeding() {
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+  display.setCursor(0, 15);
+  display.println("Auto Feeding Mode");
+  display.setCursor(0, 30);
+  display.println("Hold BACK to exit");
+  display.display();
+
+  bool exitMode = false;
+  static int lastDay = -1;
+  bool feedingDoneToday[5] = { false, false, false, false, false };
+
+  unsigned long lastLoop = 0;
+  const unsigned long loopInterval = 500; // τρέχει κάθε 0.5s
+
+  while (!exitMode) {
+    if (millis() - lastLoop >= loopInterval) {
+      lastLoop = millis();
+      now = rtc.now();
+
+      // reset flags κάθε μέρα
+      if (now.day() != lastDay) {
+        for (int i = 0; i < 5; i++) feedingDoneToday[i] = false;
+        lastDay = now.day();
+      }
+
+      // Έλεγχος για ώρες τάισματος
+      for (int i = 0; i < frequency; i++) {
+        int feedHour = feedingTimes[i][0];
+        int feedMin = feedingTimes[i][1];
+
+        if (!feedingDoneToday[i] && now.hour() == feedHour && now.minute() == feedMin) {
+          display.clearDisplay();
+          animation();
+          display.display();
+
+          stepperMotor.step(portions * stepAmount);
+          feedingDoneToday[i] = true;
+
+          delay(1000); // μικρό delay για να δει την οθόνη
+          display.clearDisplay();
+          display.setCursor(0, 15);
+          display.println("Auto Feeding Mode");
+          display.setCursor(0, 30);
+          display.println("Hold BACK to exit");
+          display.display();
+        }
+      }
+
+      // Εμφάνιση ώρας
+      display.setTextSize(1);
+      display.setCursor(90, 0);
+      display.printf("%02d:%02d", now.hour(), now.minute());
+      display.display();
+    }
+
+    // Έλεγχος για back button
+    static bool backPrevState = HIGH;
+    bool backState = digitalRead(buttonBack);
+
+    if (backState == LOW && backPrevState == HIGH) {
+      unsigned long pressStart = millis();
+      while(digitalRead(buttonBack) == LOW) {
+        if (millis() - pressStart > 1000) {
+          exitMode = true;
+          break;
+        }
+      }
+    }
+    backPrevState = backState;
+  }
+
+  showMenu();
+}
+
+
+// ===== SETTINGS =====
+void handleSettings() {
+  bool done = false;
+  settingsState = SET_PORTIONS; settingsCursor = 0; settingsSubCursor = 0;
+
+  while (!done) {
+    display.clearDisplay();
+    display.setTextColor(WHITE);
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.printf("%02d/%02d/%04d %02d:%02d",
+                   rtc.now().day(), rtc.now().month(), rtc.now().year(),
+                   rtc.now().hour(), rtc.now().minute());
+
+    switch (settingsState) {
+      case SET_PORTIONS:
+        display.setCursor(0, 20);
+        display.println("Set Portions:");
+        display.setTextSize(2);
+        display.setCursor(0, 35);
+        display.println(portions);
+        break;
+
+      case SET_FREQUENCY:
+        display.setTextSize(1);
+        display.setCursor(0, 20);
+        display.println("Set Frequency:");
+        display.setTextSize(2);
+        display.setCursor(0, 35);
+        display.println(frequency);
+        break;
+
+      case SET_TIMES:
+        display.setTextSize(1);
+        display.setCursor(0, 15);
+        display.println("Feeding Times:");
+        for (int i = 0; i < timeCount; i++) {
+          display.setCursor(0, 25 + i * 10);
+          display.printf("%d: %02d:%02d", i + 1, feedingTimes[i][0], feedingTimes[i][1]);
+          if (i == settingsCursor) {
+            display.setCursor(60, 25 + i * 10);
+            display.print(settingsSubCursor == 0 ? "Set hours" : "Set minutes");
+          }
+        }
+        break;
+
+      case SETTINGS_DONE:
+        done = true;
+        saveSettings();
+        showMenu();
+        return;
+    }
+
+    display.display();
+    delay(100);
+
+    // Buttons
+    if (digitalRead(buttonDown) == LOW) {
+      if (settingsState == SET_PORTIONS && portions < 10) portions++;
+      else if (settingsState == SET_FREQUENCY && frequency < 4) {
+        frequency++;
+        timeCount = frequency; // ενημέρωση timeCount
+      }
+      else if (settingsState == SET_TIMES) {
+        if (settingsSubCursor == 0)
+          feedingTimes[settingsCursor][0] = (feedingTimes[settingsCursor][0] + 1) % 24;
+        else
+          feedingTimes[settingsCursor][1] = (feedingTimes[settingsCursor][1] + 1) % 60;
+      }
+      delay(150);
+    }
+
+    if (digitalRead(buttonUp) == LOW) {
+      if (settingsState == SET_PORTIONS && portions > 1) portions--;
+      else if (settingsState == SET_FREQUENCY && frequency > 1) {
+        frequency--;
+        timeCount = frequency; // ενημέρωση timeCount
+      }
+      else if (settingsState == SET_TIMES) {
+        if (settingsSubCursor == 0)
+          feedingTimes[settingsCursor][0] = (feedingTimes[settingsCursor][0] + 23) % 24;
+        else
+          feedingTimes[settingsCursor][1] = (feedingTimes[settingsCursor][1] + 59) % 60;
+      }
+      delay(150);
+    }
+
+    if (digitalRead(buttonEnter) == LOW) {
+      if (settingsState == SET_TIMES) {
+        settingsSubCursor++;
+        if (settingsSubCursor > 1) {
+          settingsSubCursor = 0;
+          settingsCursor++;
+          if (settingsCursor >= timeCount) settingsState = SETTINGS_DONE;
+        }
+      } else {
+        if (settingsState == SET_PORTIONS) settingsState = SET_FREQUENCY;
+        else if (settingsState == SET_FREQUENCY) settingsState = SET_TIMES;
+      }
+      delay(300);
+    }
+
+    if (digitalRead(buttonBack) == LOW) {
+      settingsState = SETTINGS_DONE;
+      delay(300);
+    }
+  }
+}
+
+void animation(){
 
 }
 
-void autoFeeding(){
+void saveSettings(){
 
 }
 
-// void handleSettings(){
-
+void loadSettings(){
+  
 }
