@@ -87,9 +87,11 @@ void setup() {
   pinMode(buttonEnter, INPUT_PULLUP);
   pinMode(buttonBack, INPUT_PULLUP);
 
-  // stepperMotor.setSpeed(5);
+  stepperMotor.setSpeed(5);
+
   EEPROM.begin(512);
-  // loadSettings();
+
+  loadSettings();
 
   setRTCtimeOnBoot();
 }
@@ -425,14 +427,39 @@ void handleSettings() {
   }
 }
 
-void animation(){
-
+void animation() {
+  for (int frame = 0; frame < loading_screen_bitmapallArray_LEN; frame++) {
+    display.clearDisplay();
+    display.drawBitmap(0, 0, loading_screen_bitmapallArray[frame], 128, 64, SSD1306_WHITE);
+    display.display();
+    delay(250);
+  }
 }
 
-void saveSettings(){
-
+// ===== EEPROM =====
+void saveSettings() {
+  EEPROM.write(0, portions);
+  EEPROM.write(1, frequency);
+  for (int i = 0; i < timeCount; i++) {
+    EEPROM.write(2 + i * 2, feedingTimes[i][0]);
+    EEPROM.write(2 + i * 2 + 1, feedingTimes[i][1]);
+  }
+  EEPROM.commit();
 }
 
-void loadSettings(){
-  
+void loadSettings() {
+  portions = EEPROM.read(0);
+  if (portions < 1 || portions > 10) portions = 3;
+
+  frequency = EEPROM.read(1);
+  if (frequency < 1 || frequency > 4) frequency = 2;
+
+  timeCount = frequency; // ενημέρωση timeCount κατά φόρτωση
+
+  for (int i = 0; i < timeCount; i++) {
+    feedingTimes[i][0] = EEPROM.read(2 + i * 2);
+    feedingTimes[i][1] = EEPROM.read(2 + i * 2 + 1);
+    if (feedingTimes[i][0] > 23) feedingTimes[i][0] = 0;
+    if (feedingTimes[i][1] > 59) feedingTimes[i][1] = 0;
+  }
 }
