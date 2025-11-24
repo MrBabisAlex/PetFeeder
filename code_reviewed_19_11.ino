@@ -16,7 +16,8 @@ int timeCount = frequency;  // αριθμός ωρών βάσει frequency
 enum SettingsState { SET_PORTIONS,
                      SET_FREQUENCY,
                      SET_TIMES,
-                     SETTINGS_DONE };
+                     SETTINGS_DONE
+                   };
 SettingsState settingsState = SET_PORTIONS;
 int settingsCursor = 0;
 int settingsSubCursor = 0;
@@ -35,8 +36,8 @@ Stepper stepperMotor(STEPS, 14, 26, 27, 25);  //ini1 => 16, ini3 => 14 , ini2 =>
 RTC_DS3231 rtc;
 
 // ===== BUTTONS =====
-const int buttonUp = 19;
-const int buttonDown = 18;
+const int buttonUp = 18;
+const int buttonDown = 19;
 const int buttonEnter = 17;
 const int buttonBack = 16;
 
@@ -45,6 +46,8 @@ const unsigned long pressTimeout = 1000;
 unsigned long lastBackPress = 0;
 
 // ===== MENU =====
+String menuItems[] = {"MANUAL", "AUTO", "SETTINGS"};
+int menuSize = 3;
 int menuIndex = 0;
 int stepAmount = 512;
 int backPressCount = 0;
@@ -195,22 +198,42 @@ void setRTCtimeOnBoot() {
 }
 
 void showMenu() {
+
+
+
   now = rtc.now();
+
   display.clearDisplay();
   display.setTextColor(WHITE);
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-
-  display.printf("%02d/%02d/%04d", now.day(), now.month(), now.year());
-  display.setCursor(90, 0);
+  display.setTextSize(2);
+  display.setFont(NULL);
+  display.setCursor(64, 10);
   display.printf("%02d:%02d", now.hour(), now.minute());
+  display.setCursor(64, 30);
+  display.setTextSize(1);
+  display.printf("%02d/%02d/%04d", now.day(), now.month(), now.year());
 
-  display.setCursor(0, 15);
-  display.println(menuIndex == 0 ? "> manual feeding" : "  manual feeding");
-  display.setCursor(0, 30);
-  display.println(menuIndex == 1 ? "> auto feeding" : "  auto feeding");
-  display.setCursor(0, 45);
-  display.println(menuIndex == 2 ? "> settings" : "  settings");
+
+
+  // --- Σχεδίαση 3 επιλογών σε δικά τους πλαίσια ---
+  for (int i = 0; i < menuSize; i++) {
+    int y = 0 + i * 21;       // απόσταση μεταξύ επιλογών
+
+    // Πλαίσιο επιλογής
+    display.drawRoundRect(5, y, 54, 20, 9, WHITE);
+
+    // Αν είναι επιλεγμένη → inverted text
+    if (i == menuIndex) {
+      display.fillRoundRect(5, y, 54, 20, 9, WHITE);
+      display.setTextColor(BLACK, WHITE);
+    } else {
+      display.setTextColor(WHITE, BLACK);
+    }
+
+    display.setCursor(9, y + 6);
+    display.print(menuItems[i]);
+  }
+
   display.display();
 }
 
@@ -304,6 +327,7 @@ void autoFeeding() {
       }
 
       // Εμφάνιση ώρας
+      display.fillRoundRect(80, 0, 50, 10, 0, 0);
       display.setTextSize(1);
       display.setCursor(90, 0);
       display.printf("%02d:%02d", now.hour(), now.minute());
