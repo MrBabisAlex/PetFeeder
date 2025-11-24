@@ -102,9 +102,11 @@ void setup() {
 }
 
 void loop() {
+  now = rtc.now();
   checkLockToggle();
   if (isLocked) return;
   handleButtons();
+  showMenu();
 }
 
 
@@ -193,7 +195,7 @@ void setRTCtimeOnBoot() {
 }
 
 void showMenu() {
-  // now = rtc.now();
+  now = rtc.now();
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(1);
@@ -250,6 +252,7 @@ void manualFeeding() {
 
 // ===== AUTO FEEDING =====
 void autoFeeding() {
+  now = rtc.now();
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(1);
@@ -329,6 +332,7 @@ void autoFeeding() {
 
 // ===== SETTINGS =====
 void handleSettings() {
+  now = rtc.now();
   bool done = false;
   settingsState = SET_PORTIONS;
   settingsCursor = 0;
