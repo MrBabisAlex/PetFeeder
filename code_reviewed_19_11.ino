@@ -17,7 +17,7 @@ enum SettingsState { SET_PORTIONS,
                      SET_FREQUENCY,
                      SET_TIMES,
                      SETTINGS_DONE
-                   };
+};
 SettingsState settingsState = SET_PORTIONS;
 int settingsCursor = 0;
 int settingsSubCursor = 0;
@@ -36,8 +36,8 @@ Stepper stepperMotor(STEPS, 14, 26, 27, 25);  //ini1 => 16, ini3 => 14 , ini2 =>
 RTC_DS3231 rtc;
 
 // ===== BUTTONS =====
-const int buttonUp = 18;
-const int buttonDown = 19;
+const int buttonUp = 19;
+const int buttonDown = 18;
 const int buttonEnter = 17;
 const int buttonBack = 16;
 
@@ -46,7 +46,7 @@ const unsigned long pressTimeout = 1000;
 unsigned long lastBackPress = 0;
 
 // ===== MENU =====
-String menuItems[] = {"MANUAL", "AUTO", "SETTINGS"};
+String menuItems[] = { "MANUAL", "AUTO", "SETTINGS" };
 int menuSize = 3;
 int menuIndex = 0;
 int stepAmount = 512;
@@ -65,6 +65,7 @@ void saveSettings();
 void loadSettings();
 void autoFeeding();
 void setRTCtimeOnBoot();
+void autoFeedAnimation();
 
 void setup() {
   Serial.begin(9600);
@@ -132,7 +133,6 @@ void setRTCtimeOnBoot() {
     display.setTextSize(1);
     display.setCursor(0, 0);
     display.println("Set Date & Time");
-
     display.setCursor(0, 20);
     display.printf("Y:%04d M:%02d D:%02d", year, month, day);
     display.setCursor(0, 40);
@@ -193,14 +193,10 @@ void setRTCtimeOnBoot() {
       delay(300);
     }
   }
-
   showMenu();
 }
 
 void showMenu() {
-
-
-
   now = rtc.now();
 
   display.clearDisplay();
@@ -213,11 +209,9 @@ void showMenu() {
   display.setTextSize(1);
   display.printf("%02d/%02d/%04d", now.day(), now.month(), now.year());
 
-
-
   // --- Σχεδίαση 3 επιλογών σε δικά τους πλαίσια ---
   for (int i = 0; i < menuSize; i++) {
-    int y = 0 + i * 21;       // απόσταση μεταξύ επιλογών
+    int y = 0 + i * 21;  // απόσταση μεταξύ επιλογών
 
     // Πλαίσιο επιλογής
     display.drawRoundRect(5, y, 54, 20, 9, WHITE);
@@ -229,11 +223,9 @@ void showMenu() {
     } else {
       display.setTextColor(WHITE, BLACK);
     }
-
     display.setCursor(9, y + 6);
     display.print(menuItems[i]);
   }
-
   display.display();
 }
 
@@ -247,6 +239,7 @@ void handleButtons() {
     showMenu();
     delay(200);
   }
+
   if (digitalRead(buttonDown) == LOW) {
     menuIndex--;
     if (menuIndex < 0) menuIndex = 2;
@@ -275,16 +268,6 @@ void manualFeeding() {
 
 // ===== AUTO FEEDING =====
 void autoFeeding() {
-  now = rtc.now();
-  display.clearDisplay();
-  display.setTextColor(WHITE);
-  display.setTextSize(1);
-  display.setCursor(0, 15);
-  display.println("Auto Feeding Mode");
-  display.setCursor(0, 30);
-  display.println("Hold BACK to exit");
-  display.display();
-
   bool exitMode = false;
   static int lastDay = -1;
   bool feedingDoneToday[5] = { false, false, false, false, false };
@@ -293,6 +276,8 @@ void autoFeeding() {
   const unsigned long loopInterval = 500;  // τρέχει κάθε 0.5s
 
   while (!exitMode) {
+    now = rtc.now();
+    autoFeedAnimation();
     if (millis() - lastLoop >= loopInterval) {
       lastLoop = millis();
       now = rtc.now();
@@ -317,21 +302,9 @@ void autoFeeding() {
           feedingDoneToday[i] = true;
 
           delay(1000);  // μικρό delay για να δει την οθόνη
-          display.clearDisplay();
-          display.setCursor(0, 15);
-          display.println("Auto Feeding Mode");
-          display.setCursor(0, 30);
-          display.println("Hold BACK to exit");
-          display.display();
+          autoFeedAnimation();
         }
       }
-
-      // Εμφάνιση ώρας
-      display.fillRoundRect(80, 0, 50, 10, 0, 0);
-      display.setTextSize(1);
-      display.setCursor(90, 0);
-      display.printf("%02d:%02d", now.hour(), now.minute());
-      display.display();
     }
 
     // Έλεγχος για back button
@@ -349,7 +322,6 @@ void autoFeeding() {
     }
     backPrevState = backState;
   }
-
   showMenu();
 }
 
@@ -542,4 +514,27 @@ void checkLockToggle() {
       showMenu();
     }
   }
+}
+
+
+// ===== AUTO FEED ANIMATION =====
+void autoFeedAnimation() {
+  now = rtc.now();
+
+  display.clearDisplay();
+  display.setTextColor(1);
+  display.setTextSize(2);
+  display.setTextWrap(false);
+  display.setCursor(35, 1);
+  display.printf("%02d:%02d", now.hour(), now.minute());
+  display.drawBitmap(58, 33, image_device_reset_bits, 13, 16, 1);
+  display.setTextSize(1);
+  display.setCursor(32, 57);
+  display.print("Hold back  ");
+  display.drawBitmap(90, 58, image_arrow_curved_left_up_down_bits, 7, 5, 1);
+  display.setCursor(38, 24);
+  display.print("Auto Mode");
+  display.drawBitmap(5, 33, image_paws_bits, 26, 26, 1);
+  display.drawBitmap(97, 5, image_paws_bits, 26, 26, 1);
+  display.display();
 }
