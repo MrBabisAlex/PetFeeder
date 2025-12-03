@@ -79,8 +79,7 @@ int previousIndex = 0;
 void updateTimeDate();
 void showMenu();
 bool handleButtons();
-void manualFeeding();
-void animation();
+void feedNow();
 void checkLockToggle();
 void handleSettings();
 void saveSettings();
@@ -154,112 +153,105 @@ void loop()
 
 void setRTCtimeOnBoot()
 {
-  int year = 2025, month = 1, day = 1, hour = 0, minute = 0;
-  int cursor = 0; // 0=year, 1=month, 2=day, 3=hour, 4=minute
-  bool done = false;
+  int year = 2025, month = 1, day = 1;
+  int hour = 0, minute = 0;
 
-  display.clearDisplay();
-  display.setTextColor(WHITE);
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.println("Set Date & Time");
-  display.display();
-  delay(1000);
+  int cursor = 0;       // 0=year,1=month,2=day,3=hour,4=minute
+  int mode = 0;         // 0 = Date bitmap, 1 = Time bitmap
+  bool done = false;
 
   while (!done)
   {
     display.clearDisplay();
     display.setTextColor(WHITE);
-    display.setTextSize(1);
-    display.setCursor(0, 0);
-    display.println("Set Date & Time");
-    display.setCursor(0, 20);
-    display.printf("Y:%04d M:%02d D:%02d", year, month, day);
-    display.setCursor(0, 40);
-    display.printf("T:%02d:%02d", hour, minute);
+    display.setTextSize(2);
 
-    switch (cursor)
+    // -------------------------------------
+    //   DRAW BITMAP (48x48) AT TOP CENTER
+    // -------------------------------------
+    if (mode == 0)
+      display.drawBitmap(42, 0, image_calendar_bits, 45, 48, 1);
+    else
+      display.drawBitmap(42, 0, image_clock_quarters_bits, 45, 48, 1);
+
+    // -------------------------------------
+    //   RENDER DATE OR TIME EDITING AREA
+    // -------------------------------------
+
+    if (mode == 0)  // DATE MODE
     {
-    case 0:
-      display.setCursor(30, 30);
-      break; // Year
-    case 1:
-      display.setCursor(60, 30);
-      break; // Month
-    case 2:
-      display.setCursor(90, 30);
-      break; // Day
-    case 3:
-      display.setCursor(19, 50);
-      break; // Hour
-    case 4:
-      display.setCursor(36, 50);
-      break; // Minute
+      display.setCursor(5, 48);
+      if (cursor == 0) display.fillRect(4, 47, 24 , 16, WHITE), display.setTextColor(BLACK);
+      display.printf("%02d", day);
+      display.setTextColor(WHITE);
+      display.print("/");
+      
+      if (cursor == 1) display.fillRect(40, 47, 24, 16, WHITE), display.setTextColor(BLACK);
+      display.printf("%02d", month);
+      display.setTextColor(WHITE);
+      display.print("/");
+
+      if (cursor == 2) display.fillRect(76, 47, 48, 16, WHITE), display.setTextColor(BLACK);
+      display.printf("%04d", year);
+      display.setTextColor(WHITE);
     }
-    display.print("^");
+    else  // TIME MODE
+    {
+      display.setTextSize(2);
+      display.setCursor(35, 48);
+      if (cursor == 3) display.fillRect(33, 47, 27, 16, WHITE), display.setTextColor(BLACK);
+      display.printf("%02d", hour);
+      display.setTextColor(WHITE);
+      display.print(":");
+
+  
+      if (cursor == 4) display.fillRect(68, 47, 27, 16, WHITE), display.setTextColor(BLACK);
+      display.printf("%02d", minute);
+      display.setTextColor(WHITE);
+    }
+
     display.display();
+
+    // -------------------------------------
+    //            BUTTON HANDLING
+    // -------------------------------------
 
     if (digitalRead(buttonDown) == LOW)
     {
-      switch (cursor)
-      {
-      case 0:
-        year++;
-        break;
-      case 1:
-        month = (month < 12) ? month + 1 : 1;
-        break;
-      case 2:
-        day = (day < 31) ? day + 1 : 1;
-        break;
-      case 3:
-        hour = (hour + 1) % 24;
-        break;
-      case 4:
-        minute = (minute + 1) % 60;
-        break;
-      }
+      if (cursor == 0) day = (day < 31) ? day + 1 : 1;
+      if (cursor == 1) month = (month < 12) ? month + 1 : 1;
+      if (cursor == 2) year++;
+      if (cursor == 3) hour = (hour + 1) % 24;
+      if (cursor == 4) minute = (minute + 1) % 60;
       delay(200);
     }
 
     if (digitalRead(buttonUp) == LOW)
     {
-      switch (cursor)
-      {
-      case 0:
-        year--;
-        if (year < 2020)
-          year = 2025;
-        break;
-      case 1:
-        month = (month > 1) ? month - 1 : 12;
-        break;
-      case 2:
-        day = (day > 1) ? day - 1 : 31;
-        break;
-      case 3:
-        hour = (hour == 0) ? 23 : hour - 1;
-        break;
-      case 4:
-        minute = (minute == 0) ? 59 : minute - 1;
-        break;
-      }
+      if (cursor == 0) day = (day > 1) ? day - 1 : 31;
+      if (cursor == 1) month = (month > 1) ? month - 1 : 12;
+      if (cursor == 2) year = (year > 2020) ? year - 1 : 2025;
+      if (cursor == 3) hour = (hour == 0) ? 23 : hour - 1;
+      if (cursor == 4) minute = (minute == 0) ? 59 : minute - 1;
       delay(200);
     }
 
     if (digitalRead(buttonEnter) == LOW)
     {
       cursor++;
+
+      if (cursor == 3 && mode == 0)
+      {
+        // DONE WITH DATE → SWITCH TO TIME
+        mode = 1;
+      }
+
       if (cursor > 4)
       {
         rtc.adjust(DateTime(year, month, day, hour, minute, 0));
-        display.clearDisplay();
-        display.setCursor(10, 25);
-        display.println("Time Saved!");
-        display.display();
-        delay(1000);
         done = true;
       }
+
       delay(300);
     }
 
@@ -398,7 +390,7 @@ bool handleButtons()
   if (digitalRead(buttonEnter) == LOW)
   {
     if (menuIndex == 0)
-      manualFeeding();
+      feedNow();
     if (menuIndex == 1)
       autoFeeding();
     if (menuIndex == 2)
@@ -411,15 +403,25 @@ bool handleButtons()
 }
 
 // ===== MANUAL FEEDING =====
-void manualFeeding()
+void feedNow()
 {
-  stepperMotor.step(stepAmount);
-  animation();
   display.clearDisplay();
-  display.drawBitmap(0, 0, loading_screen_bitmapallArray[5], 128, 64, SSD1306_WHITE);
-  display.display();
-  delay(2000);
-  showMenu();
+  int fullBar = 64;
+  int stepAmount = 512 * portions;
+
+  display.drawRect(32, 51, 64, 10, 1);
+  display.drawBitmap(35, 0, cat_image_bits, 51, 53, 1);
+  for (int i = 0; i <= fullBar; i += 4)
+  {
+
+    display.fillRect(32, 51, i, 9, 1);
+    display.display();
+    if (stepAmount >= 0)
+    {
+      stepperMotor.step(32 * portions);
+      stepAmount -= 32 * portions;
+    }
+  }
 }
 
 // ===== AUTO FEEDING =====
@@ -456,11 +458,10 @@ void autoFeeding()
 
         if (!feedingDoneToday[i] && CurrentTime.hour == feedHour && CurrentTime.minute == feedMin)
         {
-          display.clearDisplay();
-          animation();
+          feedNow();
+
           display.display();
 
-          stepperMotor.step(portions * stepAmount);
           feedingDoneToday[i] = true;
 
           delay(1000); // μικρό delay για να δει την οθόνη
@@ -645,17 +646,6 @@ void handleSettings()
   }
 }
 
-void animation()
-{
-  for (int frame = 0; frame < loading_screen_bitmapallArray_LEN; frame++)
-  {
-    display.clearDisplay();
-    display.drawBitmap(0, 0, loading_screen_bitmapallArray[frame], 128, 64, SSD1306_WHITE);
-    display.display();
-    delay(250);
-  }
-}
-
 // ===== EEPROM =====
 void saveSettings()
 {
@@ -713,9 +703,12 @@ void checkLockToggle()
   {
     isLocked = true;
     backPressCount = 0;
-    display.clearDisplay();
-    display.drawBitmap(30, 15, lock_screen, 64, 35, WHITE);
-    display.display();
+    for (int i = 0; i < FRAME_COUNT; i++)
+    {
+      display.clearDisplay();
+      display.drawBitmap(40, 8, frames[i], 48, 48, 1);
+      display.display();
+    }
   }
 
   while (isLocked)
@@ -734,9 +727,12 @@ void checkLockToggle()
     {
       isLocked = false;
       backPressCount = 0;
-      display.clearDisplay();
-      display.drawBitmap(30, 15, unlock_screen, 64, 35, WHITE);
-      display.display();
+      for (int i = 0; i < FRAME_COUNT; i++)
+      {
+        display.clearDisplay();
+        display.drawBitmap(40, 8, frames[i], 48, 48, 1);
+        display.display();
+      }
       delay(800);
       showMenu();
     }
