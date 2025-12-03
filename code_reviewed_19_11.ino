@@ -1,4 +1,3 @@
-
 #include <SPI.h>
 #include <Wire.h>
 #include <RTClib.h>
@@ -69,13 +68,12 @@ unsigned long lastBackPress = 0;
 // ===== MENU =====
 int lastDisplayedHour = -1;
 int lastDisplayedMinute = -1;
-String menuItems[] = {"MANUAL", "AUTO", "SETTINGS"};
 int menuSize = 3;
 int menuIndex = 0;
 int stepAmount = 512;
 int backPressCount = 0;
 bool isLocked = false;
-DateTime now;
+int previousIndex = 0;
 
 // ===== PROTOTYPES =====
 void updateTimeDate();
@@ -134,20 +132,24 @@ void setup()
   setRTCtimeOnBoot();
 }
 
-void loop() {
-    updateTimeDate();
-    checkLockToggle();
-    
-    if (isLocked) return;
+void loop()
+{
+  updateTimeDate();
+  checkLockToggle();
 
-    bool buttonPressed = handleButtons(); // επιστρέφει true αν πατήθηκε κουμπί
+  if (isLocked)
+    return;
 
-    // Ανανέωση menu μόνο αν άλλαξε η ώρα ή αν πατήθηκε κουμπί
-    if (CurrentTime.hour != lastDisplayedHour || CurrentTime.minute != lastDisplayedMinute || buttonPressed) {
-        showMenu();
-        lastDisplayedHour = CurrentTime.hour;
-        lastDisplayedMinute = CurrentTime.minute;
-    }
+  bool buttonPressed = handleButtons(); // επιστρέφει true αν πατήθηκε κουμπί
+
+  // Ανανέωση menu μόνο αν άλλαξε η ώρα ή αν πατήθηκε κουμπί
+  if (CurrentTime.hour != lastDisplayedHour || CurrentTime.minute != lastDisplayedMinute || buttonPressed || menuIndex != previousIndex)
+  {
+    showMenu();
+    lastDisplayedHour = CurrentTime.hour;
+    lastDisplayedMinute = CurrentTime.minute;
+    previousIndex = menuIndex;
+  }
 }
 
 void setRTCtimeOnBoot()
@@ -299,68 +301,113 @@ void showMenu()
   // Εξασφάλιση ότι menuIndex είναι εντός ορίων
   menuIndex = constrain(menuIndex, 0, menuSize - 1);
 
-  // Καθαρισμός μόνο του background, όχι ολόκληρη η οθόνη
-  display.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLACK);
-
-  // Ζωγράφισμα ώρας & ημερομηνίας
-  drawTime(64, 10, WHITE, BLACK, 2);
-  drawDate(64, 30, WHITE, BLACK, 1);
-
-  // Σχεδίαση επιλογών menu
-  for (int i = 0; i < menuSize; i++)
+  switch (menuIndex)
   {
-    int y = i * 21; // απόσταση μεταξύ επιλογών
+  case 0:
 
-    // Σχεδίαση πλαισίου επιλογής
-    display.drawRoundRect(5, y, 54, 20, 9, WHITE);
+    display.clearDisplay();
 
-    // Αν είναι η τρέχουσα επιλογή → inverted
-    if (i == menuIndex)
-    {
-      display.fillRoundRect(5, y, 54, 20, 9, WHITE);
-      display.setTextColor(BLACK, WHITE);
-    }
-    else
-    {
-      display.setTextColor(WHITE, BLACK);
-    }
+    drawDate(0, 0, WHITE, BLACK, 1);
+    drawTime(97, 0, WHITE, BLACK, 1);
 
-    display.setCursor(9, y + 6);
-    display.print(menuItems[i]);
+    display.drawLine(1, 53, 126, 53, 1);
+
+    display.drawRoundRect(39, 14, 51, 36, 17, 1);
+    display.drawBitmap(56, 24, image_music_next_bits, 16, 16, 1);
+
+    display.drawLine(1, 9, 126, 9, 1);
+    display.drawBitmap(5, 57, image_SmallArrowUp_bits, 7, 4, 1);
+    display.drawBitmap(17, 57, image_SmallArrowDown_bits, 8, 4, 1);
+    display.drawBitmap(107, 55, image_checked_bits, 7, 8, 1);
+    display.drawBitmap(118, 55, image_Lock_bits, 7, 8, 1);
+
+    display.display();
+
+    break;
+
+  case 1:
+
+    display.clearDisplay();
+
+    drawDate(0, 0, WHITE, BLACK, 1);
+    drawTime(97, 0, WHITE, BLACK, 1);
+
+    display.drawLine(1, 53, 126, 53, 1);
+
+    display.drawRoundRect(39, 14, 51, 36, 17, 1);
+    display.drawBitmap(51, 16, image_device_reset_bits_menu, 26, 32, 1);
+
+    display.drawLine(1, 9, 126, 9, 1);
+    display.drawBitmap(5, 57, image_SmallArrowUp_bits, 7, 4, 1);
+    display.drawBitmap(17, 57, image_SmallArrowDown_bits, 8, 4, 1);
+    display.drawBitmap(107, 55, image_checked_bits, 7, 8, 1);
+    display.drawBitmap(118, 55, image_Lock_bits, 7, 8, 1);
+
+    display.display();
+    break;
+
+  case 2:
+
+    display.clearDisplay();
+
+    drawDate(0, 0, WHITE, BLACK, 1);
+    drawTime(97, 0, WHITE, BLACK, 1);
+
+    display.drawLine(1, 53, 126, 53, 1);
+
+    display.drawRoundRect(39, 14, 51, 36, 17, 1);
+    display.drawBitmap(48, 16, image_menu_settings_gear_bits, 32, 32, 1);
+
+    display.drawLine(1, 9, 126, 9, 1);
+    display.drawBitmap(5, 57, image_SmallArrowUp_bits, 7, 4, 1);
+    display.drawBitmap(17, 57, image_SmallArrowDown_bits, 8, 4, 1);
+    display.drawBitmap(107, 55, image_checked_bits, 7, 8, 1);
+    display.drawBitmap(118, 55, image_Lock_bits, 7, 8, 1);
+
+    display.display();
+    break;
+
+  default:
+    break;
   }
-
-  // Τελικό render
-  display.display();
-  Serial.println("showMenu");
 }
 
 // ===== BUTTON HANDLER =====
-bool handleButtons() {
-    bool pressed = false;
+bool handleButtons()
+{
+  bool pressed = false;
 
-    if (digitalRead(buttonUp) == LOW) {
-        menuIndex++;
-        if (menuIndex > 2) menuIndex = 0;
-        pressed = true;
-        delay(200);
-    }
+  if (digitalRead(buttonUp) == LOW)
+  {
+    menuIndex++;
+    if (menuIndex > 2)
+      menuIndex = 0;
+    pressed = true;
+    delay(200);
+  }
 
-    if (digitalRead(buttonDown) == LOW) {
-        menuIndex--;
-        if (menuIndex < 0) menuIndex = 2;
-        pressed = true;
-        delay(200);
-    }
+  if (digitalRead(buttonDown) == LOW)
+  {
+    menuIndex--;
+    if (menuIndex < 0)
+      menuIndex = 2;
+    pressed = true;
+    delay(200);
+  }
 
-    if (digitalRead(buttonEnter) == LOW) {
-        if (menuIndex == 0) manualFeeding();
-        if (menuIndex == 1) autoFeeding();
-        if (menuIndex == 2) handleSettings();
-        pressed = true;
-        delay(200);
-    }
+  if (digitalRead(buttonEnter) == LOW)
+  {
+    if (menuIndex == 0)
+      manualFeeding();
+    if (menuIndex == 1)
+      autoFeeding();
+    if (menuIndex == 2)
+      handleSettings();
+    pressed = true;
+    delay(200);
+  }
 
-    return pressed;
+  return pressed;
 }
 
 // ===== MANUAL FEEDING =====
@@ -481,11 +528,10 @@ void handleSettings()
   {
     display.clearDisplay();
     drawDate(0, 0, WHITE, BLACK, 1);
-    drawTime(90, 0, WHITE, BLACK, 1);
+    drawTime(80, 0, WHITE, BLACK, 1);
 
     switch (settingsState)
     {
-      
     case SET_PORTIONS:
       display.setCursor(0, 20);
       display.println("Set Portions:");
