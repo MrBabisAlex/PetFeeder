@@ -156,8 +156,8 @@ void setRTCtimeOnBoot()
   int year = 2025, month = 1, day = 1;
   int hour = 0, minute = 0;
 
-  int cursor = 0;       // 0=year,1=month,2=day,3=hour,4=minute
-  int mode = 0;         // 0 = Date bitmap, 1 = Time bitmap
+  int cursor = 0; // 0=year,1=month,2=day,3=hour,4=minute
+  int mode = 0;   // 0 = Date bitmap, 1 = Time bitmap
   bool done = false;
 
   while (!done)
@@ -178,34 +178,38 @@ void setRTCtimeOnBoot()
     //   RENDER DATE OR TIME EDITING AREA
     // -------------------------------------
 
-    if (mode == 0)  // DATE MODE
+    if (mode == 0) // DATE MODE
     {
       display.setCursor(5, 48);
-      if (cursor == 0) display.fillRect(4, 47, 24 , 16, WHITE), display.setTextColor(BLACK);
+      if (cursor == 0)
+        display.fillRect(4, 47, 24, 16, WHITE), display.setTextColor(BLACK);
       display.printf("%02d", day);
       display.setTextColor(WHITE);
       display.print("/");
-      
-      if (cursor == 1) display.fillRect(40, 47, 24, 16, WHITE), display.setTextColor(BLACK);
+
+      if (cursor == 1)
+        display.fillRect(40, 47, 24, 16, WHITE), display.setTextColor(BLACK);
       display.printf("%02d", month);
       display.setTextColor(WHITE);
       display.print("/");
 
-      if (cursor == 2) display.fillRect(76, 47, 48, 16, WHITE), display.setTextColor(BLACK);
+      if (cursor == 2)
+        display.fillRect(76, 47, 48, 16, WHITE), display.setTextColor(BLACK);
       display.printf("%04d", year);
       display.setTextColor(WHITE);
     }
-    else  // TIME MODE
+    else // TIME MODE
     {
       display.setTextSize(2);
       display.setCursor(35, 48);
-      if (cursor == 3) display.fillRect(33, 47, 27, 16, WHITE), display.setTextColor(BLACK);
+      if (cursor == 3)
+        display.fillRect(33, 47, 27, 16, WHITE), display.setTextColor(BLACK);
       display.printf("%02d", hour);
       display.setTextColor(WHITE);
       display.print(":");
 
-  
-      if (cursor == 4) display.fillRect(68, 47, 27, 16, WHITE), display.setTextColor(BLACK);
+      if (cursor == 4)
+        display.fillRect(68, 47, 27, 16, WHITE), display.setTextColor(BLACK);
       display.printf("%02d", minute);
       display.setTextColor(WHITE);
     }
@@ -218,21 +222,31 @@ void setRTCtimeOnBoot()
 
     if (digitalRead(buttonDown) == LOW)
     {
-      if (cursor == 0) day = (day < 31) ? day + 1 : 1;
-      if (cursor == 1) month = (month < 12) ? month + 1 : 1;
-      if (cursor == 2) year++;
-      if (cursor == 3) hour = (hour + 1) % 24;
-      if (cursor == 4) minute = (minute + 1) % 60;
+      if (cursor == 0)
+        day = (day < 31) ? day + 1 : 1;
+      if (cursor == 1)
+        month = (month < 12) ? month + 1 : 1;
+      if (cursor == 2)
+        year++;
+      if (cursor == 3)
+        hour = (hour + 1) % 24;
+      if (cursor == 4)
+        minute = (minute + 1) % 60;
       delay(200);
     }
 
     if (digitalRead(buttonUp) == LOW)
     {
-      if (cursor == 0) day = (day > 1) ? day - 1 : 31;
-      if (cursor == 1) month = (month > 1) ? month - 1 : 12;
-      if (cursor == 2) year = (year > 2020) ? year - 1 : 2025;
-      if (cursor == 3) hour = (hour == 0) ? 23 : hour - 1;
-      if (cursor == 4) minute = (minute == 0) ? 59 : minute - 1;
+      if (cursor == 0)
+        day = (day > 1) ? day - 1 : 31;
+      if (cursor == 1)
+        month = (month > 1) ? month - 1 : 12;
+      if (cursor == 2)
+        year = (year > 2020) ? year - 1 : 2025;
+      if (cursor == 3)
+        hour = (hour == 0) ? 23 : hour - 1;
+      if (cursor == 4)
+        minute = (minute == 0) ? 59 : minute - 1;
       delay(200);
     }
 
@@ -517,74 +531,94 @@ void autoFeedAnimation()
   }
 }
 
-// ===== SETTINGS =====
 void handleSettings()
 {
   bool done = false;
   settingsState = SET_PORTIONS;
-  settingsCursor = 0;
-  settingsSubCursor = 0;
+  settingsCursor = 0;    // Για SET_TIMES δείχνει ποιο feeding time ρυθμίζουμε
+  settingsSubCursor = 0; // 0 = hours, 1 = minutes
 
   while (!done)
   {
+    // ---- DRAW DISPLAY ----
     display.clearDisplay();
     drawDate(0, 0, WHITE, BLACK, 1);
-    drawTime(80, 0, WHITE, BLACK, 1);
+    drawTime(95, 0, WHITE, BLACK, 1);
 
     switch (settingsState)
     {
     case SET_PORTIONS:
-      display.setCursor(0, 20);
-      display.println("Set Portions:");
+      display.drawBitmap(49, 10, image_food_bowl_1_bits, 30, 30, 1);
       display.setTextSize(2);
-      display.setCursor(0, 35);
+      display.setCursor(59, 46);
       display.println(portions);
       break;
 
     case SET_FREQUENCY:
-      display.setTextSize(1);
-      display.setCursor(0, 20);
-      display.println("Set Frequency:");
+      display.drawBitmap(49, 10, image_calendar_bits_settings, 30, 32, 1);
       display.setTextSize(2);
-      display.setCursor(0, 35);
+      display.setCursor(59, 46);
       display.println(frequency);
       break;
 
     case SET_TIMES:
+      display.drawBitmap(25, 11, image_clock_alarm_bits, 30, 32, 1);
       display.setTextSize(1);
-      display.setCursor(0, 15);
-      display.println("Feeding Times:");
-      for (int i = 0; i < timeCount; i++)
+      display.setCursor(77, 21);
+      display.print("feedings");
+      display.setCursor(93, 34);
+      display.printf("%d/%d",
+                     settingsCursor + 1, timeCount);
+
+      if (settingsSubCursor == 0)
       {
-        display.setCursor(0, 25 + i * 10);
-        display.printf("%d: %02d:%02d", i + 1, feedingTimes[i][0], feedingTimes[i][1]);
-        if (i == settingsCursor)
-        {
-          display.setCursor(60, 25 + i * 10);
-          display.print(settingsSubCursor == 0 ? "Set hours" : "Set minutes");
-        }
+        display.fillRect( 9, 44, 26, 18, WHITE), display.setTextColor(BLACK);
+        display.setTextSize(2);
+        display.setCursor(11, 46);
+        display.printf("%02d", feedingTimes[settingsCursor][0]);
+        display.setTextColor(WHITE);
+        display.print(":");
+        display.printf("%02d", feedingTimes[settingsCursor][1]);
+      }else{
+        display.setTextSize(2);
+        display.setCursor(11, 46);
+        display.setTextColor(WHITE);
+        display.printf("%02d", feedingTimes[settingsCursor][0]);
+        display.print(":");
+        display.fillRect(46, 44, 26, 18, WHITE), display.setTextColor(BLACK);
+        display.printf("%02d", feedingTimes[settingsCursor][1]);
       }
+
+      // Δείξε πού βρίσκεται ο cursor
+
       break;
 
     case SETTINGS_DONE:
-      done = true;
       saveSettings();
       showMenu();
       return;
     }
 
     display.display();
-    delay(100);
+    delay(80);
 
-    // Buttons
+    // ---- BUTTON HANDLING ----
+
+    // === DOWN BUTTON ===
     if (digitalRead(buttonDown) == LOW)
     {
-      if (settingsState == SET_PORTIONS && portions < 10)
-        portions++;
-      else if (settingsState == SET_FREQUENCY && frequency < 4)
+      if (settingsState == SET_PORTIONS)
       {
-        frequency++;
-        timeCount = frequency; // ενημέρωση timeCount
+        if (portions < 10)
+          portions++;
+      }
+      else if (settingsState == SET_FREQUENCY)
+      {
+        if (frequency < 4)
+        {
+          frequency++;
+          timeCount = frequency;
+        }
       }
       else if (settingsState == SET_TIMES)
       {
@@ -593,17 +627,24 @@ void handleSettings()
         else
           feedingTimes[settingsCursor][1] = (feedingTimes[settingsCursor][1] + 1) % 60;
       }
-      delay(150);
+      delay(200);
     }
 
+    // === UP BUTTON ===
     if (digitalRead(buttonUp) == LOW)
     {
-      if (settingsState == SET_PORTIONS && portions > 1)
-        portions--;
-      else if (settingsState == SET_FREQUENCY && frequency > 1)
+      if (settingsState == SET_PORTIONS)
       {
-        frequency--;
-        timeCount = frequency; // ενημέρωση timeCount
+        if (portions > 1)
+          portions--;
+      }
+      else if (settingsState == SET_FREQUENCY)
+      {
+        if (frequency > 1)
+        {
+          frequency--;
+          timeCount = frequency;
+        }
       }
       else if (settingsState == SET_TIMES)
       {
@@ -612,36 +653,44 @@ void handleSettings()
         else
           feedingTimes[settingsCursor][1] = (feedingTimes[settingsCursor][1] + 59) % 60;
       }
-      delay(150);
+      delay(200);
     }
 
+    // === ENTER BUTTON ===
     if (digitalRead(buttonEnter) == LOW)
     {
       if (settingsState == SET_TIMES)
       {
         settingsSubCursor++;
+
+        // Αν τελείωσε minutes → πήγαινε στην επόμενη ώρα
         if (settingsSubCursor > 1)
         {
           settingsSubCursor = 0;
           settingsCursor++;
+
+          // Τέλος όλων των feeding times
           if (settingsCursor >= timeCount)
             settingsState = SETTINGS_DONE;
         }
       }
       else
       {
+        // Μετάβαση στα επόμενα settings
         if (settingsState == SET_PORTIONS)
           settingsState = SET_FREQUENCY;
         else if (settingsState == SET_FREQUENCY)
           settingsState = SET_TIMES;
       }
-      delay(300);
+
+      delay(250);
     }
 
+    // === BACK BUTTON ===
     if (digitalRead(buttonBack) == LOW)
     {
       settingsState = SETTINGS_DONE;
-      delay(300);
+      delay(250);
     }
   }
 }
