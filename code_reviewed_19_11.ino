@@ -712,7 +712,7 @@ void loadSettings()
 {
   portions = EEPROM.read(0);
   if (portions < 1 || portions > 10)
-    portions = 3;
+    portions = 1;
 
   frequency = EEPROM.read(1);
   if (frequency < 1 || frequency > 4)
