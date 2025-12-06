@@ -85,6 +85,7 @@ void handleSettings();
 void saveSettings();
 void loadSettings();
 void autoFeeding();
+bool rtcTimeIsValid();
 void setRTCtimeOnBoot();
 void autoFeedAnimation();
 void drawTime(int x, int y, uint16_t textColor = WHITE, uint16_t bgColor = BLACK, uint8_t size = 2);
@@ -111,6 +112,24 @@ void setup()
     while (1)
       ;
   }
+    if (!rtcTimeIsValid()) {
+    setRTCtimeOnBoot();
+  } else {
+    display.clearDisplay();
+
+display.setTextColor(1);
+display.setTextWrap(false);
+display.setCursor(11, 2);
+display.print("RTC Time i correct");
+
+display.setCursor(14, 53);
+display.print("Let's get started");
+
+display.drawBitmap(43, 8, image_checked_bits_startup, 42, 48, 1);
+
+display.display();
+delay(1000);
+  }
 
   // Pin installation
   pinMode(buttonUp, INPUT_PULLUP);
@@ -127,8 +146,8 @@ void setup()
   // Load previous settings
   loadSettings();
 
-  // Set the time manualy
-  setRTCtimeOnBoot();
+  // // Set the time manualy
+  // setRTCtimeOnBoot();
 }
 
 void loop()
@@ -149,6 +168,15 @@ void loop()
     lastDisplayedMinute = CurrentTime.minute;
     previousIndex = menuIndex;
   }
+}
+bool rtcTimeIsValid() {
+  if (rtc.lostPower()) return false;
+
+  DateTime now = rtc.now();
+
+  if (now.year() < 2023) return false;
+
+  return true;
 }
 
 void setRTCtimeOnBoot()
