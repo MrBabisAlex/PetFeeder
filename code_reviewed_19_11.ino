@@ -90,6 +90,7 @@ void setRTCtimeOnBoot();
 void autoFeedAnimation();
 void drawTime(int x, int y, uint16_t textColor = WHITE, uint16_t bgColor = BLACK, uint8_t size = 2);
 void drawDate(int x, int y, uint16_t textColor = WHITE, uint16_t bgColor = BLACK, uint8_t size = 1);
+bool releaseButtonGuard();
 
 void setup()
 {
@@ -193,6 +194,8 @@ void setRTCtimeOnBoot()
   int cursor = 0; // 0=year,1=month,2=day,3=hour,4=minute
   int mode = 0;   // 0 = Date bitmap, 1 = Time bitmap
   bool done = false;
+
+  releaseButtonGuard();
 
   while (!done)
   {
@@ -596,6 +599,8 @@ void handleSettings()
   settingsCursor = 0;    // Για SET_TIMES δείχνει ποιο feeding time ρυθμίζουμε
   settingsSubCursor = 0; // 0 = hours, 1 = minutes
 
+  releaseButtonGuard();
+
   while (!done)
   {
     // ---- DRAW DISPLAY ----
@@ -866,4 +871,15 @@ void drawDate(int x, int y, uint16_t textColor, uint16_t bgColor, uint8_t size)
   display.setTextSize(size);
   display.setCursor(x, y);
   display.print(buf);
+}
+
+bool releaseButtonGuard(){
+  while (digitalRead(buttonEnter) == LOW ||
+       digitalRead(buttonUp) == LOW ||
+       digitalRead(buttonDown) == LOW ||
+       digitalRead(buttonBack) == LOW)
+{
+  delay(10);
+}
+return true;
 }
