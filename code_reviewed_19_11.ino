@@ -68,7 +68,7 @@ unsigned long lastBackPress = 0;
 // ===== MENU =====
 int lastDisplayedHour = -1;
 int lastDisplayedMinute = -1;
-int menuSize = 3;
+int menuSize = 4;
 int menuIndex = 0;
 int stepAmount = 512;
 int backPressCount = 0;
@@ -112,23 +112,26 @@ void setup()
     while (1)
       ;
   }
-    if (!rtcTimeIsValid()) {
+  if (!rtcTimeIsValid())
+  {
     setRTCtimeOnBoot();
-  } else {
+  }
+  else
+  {
     display.clearDisplay();
 
-display.setTextColor(1);
-display.setTextWrap(false);
-display.setCursor(11, 2);
-display.print("RTC Time i correct");
+    display.setTextColor(1);
+    display.setTextWrap(false);
+    display.setCursor(11, 2);
+    display.print("RTC Time i correct");
 
-display.setCursor(14, 53);
-display.print("Let's get started");
+    display.setCursor(14, 53);
+    display.print("Let's get started");
 
-display.drawBitmap(43, 8, image_checked_bits_startup, 42, 48, 1);
+    display.drawBitmap(43, 8, image_checked_bits_startup, 42, 48, 1);
 
-display.display();
-delay(1000);
+    display.display();
+    delay(1000);
   }
 
   // Pin installation
@@ -169,12 +172,15 @@ void loop()
     previousIndex = menuIndex;
   }
 }
-bool rtcTimeIsValid() {
-  if (rtc.lostPower()) return false;
+bool rtcTimeIsValid()
+{
+  if (rtc.lostPower())
+    return false;
 
   DateTime now = rtc.now();
 
-  if (now.year() < 2023) return false;
+  if (now.year() < 2023)
+    return false;
 
   return true;
 }
@@ -401,6 +407,28 @@ void showMenu()
     display.display();
     break;
 
+  case 3:
+
+    display.clearDisplay();
+
+    drawDate(0, 0, WHITE, BLACK, 1);
+    drawTime(97, 0, WHITE, BLACK, 1);
+
+    display.drawLine(1, 53, 126, 53, 1);
+
+    display.drawRoundRect(39, 14, 51, 36, 17, 1);
+    display.drawBitmap(73, 24, image_menu_tools_bits, 14, 16, 1);
+    display.drawBitmap(42, 17, image_set_clock_quarters_bits, 30, 32, 1);
+
+    display.drawLine(1, 9, 126, 9, 1);
+    display.drawBitmap(5, 57, image_SmallArrowUp_bits, 7, 4, 1);
+    display.drawBitmap(17, 57, image_SmallArrowDown_bits, 8, 4, 1);
+    display.drawBitmap(107, 55, image_checked_bits, 7, 8, 1);
+    display.drawBitmap(118, 55, image_Lock_bits, 7, 8, 1);
+
+    display.display();
+    break;
+
   default:
     break;
   }
@@ -414,7 +442,7 @@ bool handleButtons()
   if (digitalRead(buttonUp) == LOW)
   {
     menuIndex++;
-    if (menuIndex > 2)
+    if (menuIndex > 3)
       menuIndex = 0;
     pressed = true;
     delay(200);
@@ -424,7 +452,7 @@ bool handleButtons()
   {
     menuIndex--;
     if (menuIndex < 0)
-      menuIndex = 2;
+      menuIndex = 3;
     pressed = true;
     delay(200);
   }
@@ -437,6 +465,8 @@ bool handleButtons()
       autoFeeding();
     if (menuIndex == 2)
       handleSettings();
+    if (menuIndex == 3)
+      setRTCtimeOnBoot();
     pressed = true;
     delay(200);
   }
@@ -600,14 +630,16 @@ void handleSettings()
 
       if (settingsSubCursor == 0)
       {
-        display.fillRect( 9, 44, 26, 18, WHITE), display.setTextColor(BLACK);
+        display.fillRect(9, 44, 26, 18, WHITE), display.setTextColor(BLACK);
         display.setTextSize(2);
         display.setCursor(11, 46);
         display.printf("%02d", feedingTimes[settingsCursor][0]);
         display.setTextColor(WHITE);
         display.print(":");
         display.printf("%02d", feedingTimes[settingsCursor][1]);
-      }else{
+      }
+      else
+      {
         display.setTextSize(2);
         display.setCursor(11, 46);
         display.setTextColor(WHITE);
